@@ -1,0 +1,6 @@
+.father {
+  width: 100px;
+}
+.father .child {
+  height: 100px;
+}
