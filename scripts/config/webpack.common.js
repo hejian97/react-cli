@@ -1,10 +1,16 @@
-const { resolve } = require('path')
-const { isDev, PROJECT_PATH } = require('../constants')
+// eslint-disable-next-line unicorn/import-style
+const { resolve } = require('path');
 
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
+const WebpackBar = require('webpackbar');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { isDev, PROJECT_PATH } = require('../constants');
 
 const getCssLoaders = (importLoaders) => [
-  'style-loader',
+  isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
   {
     loader: 'css-loader',
     options: {
@@ -16,23 +22,24 @@ const getCssLoaders = (importLoaders) => [
   {
     loader: 'postcss-loader',
     options: {
-      ident: 'postcss',
-      plugins: [
-        // 修复一些和 flex 布局相关的 bug
-        require('postcss-flexbugs-fixes'),
-        require('postcss-preset-env')({
-          autoprefixer: {
-            grid: true,
-            flexbox: 'no-2009'
-          },
-          stage: 3,
-        }),
-        require('postcss-normalize'),
-      ],
-      sourceMap: isDev,
+      postcssOptions: {
+        plugins: [
+          require('postcss-flexbugs-fixes'),
+          !isDev && [
+            'postcss-preset-env',
+            {
+              autoprefixer: {
+                grid: true,
+                flexbox: 'no-2009',
+              },
+              stage: 3,
+            },
+          ],
+        ].filter(Boolean),
+      },
     },
   },
-]
+];
 
 module.exports = {
   entry: {
@@ -44,6 +51,11 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.json'],
+    alias: {
+      Src: resolve(PROJECT_PATH, './src'),
+      Components: resolve(PROJECT_PATH, './src/components'),
+      Utils: resolve(PROJECT_PATH, './src/utils'),
+    },
   },
   module: {
     rules: [
@@ -106,27 +118,50 @@ module.exports = {
           },
         ],
       },
-    ]
+    ],
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: resolve(PROJECT_PATH, './public/index.html'),
-      filename: 'index.html',
-      cache: false, // 特别重要：防止之后使用v6版本 copy-webpack-plugin 时代码修改一刷新页面为空问题。
-      minify: isDev ? false : {
-        removeAttributeQuotes: true,
-        collapseWhitespace: true,
-        removeComments: true,
-        collapseBooleanAttributes: true,
-        collapseInlineTagWhitespace: true,
-        removeRedundantAttributes: true,
-        removeScriptTypeAttributes: true,
-        removeStyleLinkTypeAttributes: true,
-        minifyCSS: true,
-        minifyJS: true,
-        minifyURLs: true,
-        useShortDoctype: true,
+      cache: true, // 特别重要：防止之后使用v6版本 copy-webpack-plugin 时代码修改一刷新页面为空问题。
+    }),
+    new CopyPlugin({
+      patterns: [
+        {
+          context: resolve(PROJECT_PATH, './public'),
+          from: '*',
+          to: resolve(PROJECT_PATH, './dist'),
+          toType: 'dir',
+          globOptions: {
+            dot: true,
+            gitignore: true,
+            ignore: ['**/index.html'],
+          },
+        },
+      ],
+    }),
+    new WebpackBar({
+      name: isDev ? 'RUNNING' : 'BUNDLING',
+      color: isDev ? '#52c41a' : '#722ed1',
+    }),
+    new ForkTsCheckerWebpackPlugin({
+      typescript: {
+        configFile: resolve(PROJECT_PATH, './tsconfig.json'),
       },
     }),
-  ]
-}
+    // webpack 5 无需配置
+    // new HardSourceWebpackPlugin(),
+  ],
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      // 拆分包的大小，至少minSize
+      // 如果一个包拆分出来达不到minSize，那么这个包就不会拆分
+      minSize: 2000,
+      // 将大于maxSize的包，拆分成不小于minSize的包
+      minChunks: 2,
+      // 最大的异步请求数量
+      maxAsyncRequests: 30,
+    },
+  },
+};

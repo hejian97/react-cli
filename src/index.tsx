@@ -1,8 +1,15 @@
 import React from 'react';
-
-import { createRoot } from 'react-dom/client';
-const container = document.getElementById('root');
-const root = createRoot(container!); // createRoot(container!) if you use TypeScript
+import { createRoot } from 'react-dom/client'; // createRoot(container!) if you use TypeScript
 import App from './app';
+import './index.css';
 
-root.render(<App name="vortesnail" age={25} />);
+const container = document.querySelector('#root');
+const root = createRoot(container!);
+
+if (module && module.hot) {
+  module.hot.accept();
+}
+
+const name = 'minnie';
+
+root.render(<App name={name} age={25} />);
