@@ -16,7 +16,6 @@ module.exports = {
     'plugin:promise/recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
-    'prettier',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -24,7 +23,7 @@ module.exports = {
       impliedStrict: true,
       jsx: true,
     },
-    ecmaVersion: 'latest',
+    ecmaVersion: 12,
     sourceType: 'module',
   },
   plugins: ['react', 'unicorn', 'promise', '@typescript-eslint', 'prettier'],
@@ -43,7 +42,6 @@ module.exports = {
       {
         ts: 'never',
         tsx: 'never',
-        json: 'never',
         js: 'never',
       },
     ],

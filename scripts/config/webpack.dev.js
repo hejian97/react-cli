@@ -35,5 +35,6 @@ module.exports = merge(common, {
       chunks: 'all',
       minSize: 0,
     },
+    chunkIds: 'named',
   },
 });

@@ -26,9 +26,15 @@ module.exports = merge(common, {
       chunkFilename: 'css/[name].[contenthash:8].chunk.css',
     }),
     shouldOpenAnalyzer &&
-      new BundleAnalyzerPlugin({ analyzerMode: 'server', analyzerHost: ANALYZER_HOST, analyzerPort: ANALYZER_PORT }),
+      new BundleAnalyzerPlugin({
+        analyzerMode: 'server',
+        analyzerHost: ANALYZER_HOST,
+        analyzerPort: ANALYZER_PORT,
+      }),
     new PurgeCSSPlugin({
-      paths: glob.sync(`${paths.appSrc}/**/*.{tsx,scss,less,css}`, { nodir: true }),
+      paths: glob.sync(`${paths.appSrc}/**/*.{tsx,scss,less,css}`, {
+        nodir: true,
+      }),
     }),
     new webpack.BannerPlugin({
       raw: true,
@@ -44,11 +50,14 @@ module.exports = merge(common, {
           compress: { pure_funcs: ['console.log'] },
         },
       }),
-      new CssMinimizerPlugin(),
+      new CssMinimizerPlugin({
+        parallel: true,
+      }),
     ],
     splitChunks: {
       chunks: 'all',
       minSize: 0,
     },
+    chunkIds: 'deterministic',
   },
 });

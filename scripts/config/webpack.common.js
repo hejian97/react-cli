@@ -106,6 +106,9 @@ module.exports = {
       {
         test: /\.(eot|svg|ttf|woff|woff2?)$/,
         type: 'asset/resource',
+        generator: {
+          filename: 'font/[name].[hash:6][ext]',
+        },
       },
     ],
   },
@@ -113,6 +116,23 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: paths.appHtml,
       cache: true, // 特别重要：防止之后使用v6版本 copy-webpack-plugin 时代码修改一刷新页面为空问题。
+      minify: isProduction
+        ? {
+            removeComments: true, // 移除注释
+            collapseWhitespace: false, // 折叠空格
+            removeRedundantAttributes: false, // 移除多余的属性 type=text
+            useShortDoctype: true, // 比如我们的模版是html4，那么会转成html5的文档
+            removeEmptyAttributes: true, // 移除空的属性 id=“”
+            removeStyleLinkTypeAttributes: true, // 比如link中的 type=“text/css”
+            keepClosingSlash: true, // 是否保持单元素的尾部 /
+            minifyCSS: true, // 是否压缩Css
+            minifyJS: {
+              mangle: {
+                toplevel: true,
+              },
+            }, //
+          }
+        : false,
     }),
     new CopyPlugin({
       patterns: [
@@ -124,7 +144,7 @@ module.exports = {
           globOptions: {
             dot: true,
             gitignore: true,
-            ignore: ['**/index.html'],
+            ignore: ['**/.DS_Store', '**/index.html'],
           },
         },
       ],
