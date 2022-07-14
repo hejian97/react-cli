@@ -1,21 +1,20 @@
-// eslint-disable-next-line unicorn/import-style
-const { resolve } = require('path');
-
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const WebpackBar = require('webpackbar');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
-const HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { isDev, PROJECT_PATH } = require('../constants');
+
+const paths = require('../paths');
+const { isDevelopment, isProduction } = require('../env');
+const { imageInlineSizeLimit } = require('../conf');
 
 const getCssLoaders = (importLoaders) => [
-  isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
+  isDevelopment ? 'style-loader' : MiniCssExtractPlugin.loader,
   {
     loader: 'css-loader',
     options: {
       modules: false,
-      sourceMap: isDev,
+      sourceMap: isDevelopment,
       importLoaders,
     },
   },
@@ -25,7 +24,7 @@ const getCssLoaders = (importLoaders) => [
       postcssOptions: {
         plugins: [
           require('postcss-flexbugs-fixes'),
-          !isDev && [
+          isProduction && [
             'postcss-preset-env',
             {
               autoprefixer: {
@@ -43,18 +42,20 @@ const getCssLoaders = (importLoaders) => [
 
 module.exports = {
   entry: {
-    app: resolve(PROJECT_PATH, './src/index.tsx'),
+    app: paths.appIndex,
   },
-  output: {
-    filename: `js/[name]${isDev ? '' : '.[hash:8]'}.js`,
-    path: resolve(PROJECT_PATH, './dist'),
+  cache: {
+    type: 'filesystem',
+    buildDependencies: {
+      config: [__filename],
+    },
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.json'],
     alias: {
-      Src: resolve(PROJECT_PATH, './src'),
-      Components: resolve(PROJECT_PATH, './src/components'),
-      Utils: resolve(PROJECT_PATH, './src/utils'),
+      Src: paths.appSrc,
+      Components: paths.appSrcComponents,
+      Utils: paths.appSrcUtils,
     },
   },
   module: {
@@ -76,7 +77,7 @@ module.exports = {
           {
             loader: 'less-loader',
             options: {
-              sourceMap: isDev,
+              sourceMap: isDevelopment,
             },
           },
         ],
@@ -88,49 +89,37 @@ module.exports = {
           {
             loader: 'sass-loader',
             options: {
-              sourceMap: isDev,
+              sourceMap: isDevelopment,
             },
           },
         ],
       },
       {
         test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
-        use: [
-          {
-            loader: 'url-loader',
-            options: {
-              limit: 10 * 1024,
-              name: '[name].[contenthash:8].[ext]',
-              outputPath: 'assets/images',
-            },
+        type: 'asset',
+        parser: {
+          dataUrlCondition: {
+            maxSize: imageInlineSizeLimit,
           },
-        ],
+        },
       },
       {
-        test: /\.(ttf|woff|woff2|eot|otf)$/,
-        use: [
-          {
-            loader: 'url-loader',
-            options: {
-              name: '[name].[contenthash:8].[ext]',
-              outputPath: 'assets/fonts',
-            },
-          },
-        ],
+        test: /\.(eot|svg|ttf|woff|woff2?)$/,
+        type: 'asset/resource',
       },
     ],
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: resolve(PROJECT_PATH, './public/index.html'),
+      template: paths.appHtml,
       cache: true, // 特别重要：防止之后使用v6版本 copy-webpack-plugin 时代码修改一刷新页面为空问题。
     }),
     new CopyPlugin({
       patterns: [
         {
-          context: resolve(PROJECT_PATH, './public'),
+          context: paths.appPublic,
           from: '*',
-          to: resolve(PROJECT_PATH, './dist'),
+          to: paths.appBuild,
           toType: 'dir',
           globOptions: {
             dot: true,
@@ -141,27 +130,15 @@ module.exports = {
       ],
     }),
     new WebpackBar({
-      name: isDev ? 'RUNNING' : 'BUNDLING',
-      color: isDev ? '#52c41a' : '#722ed1',
+      name: isDevelopment ? 'RUNNING' : 'BUNDLING',
+      color: isDevelopment ? '#52c41a' : '#722ed1',
     }),
     new ForkTsCheckerWebpackPlugin({
       typescript: {
-        configFile: resolve(PROJECT_PATH, './tsconfig.json'),
+        configFile: paths.appTsConfig,
       },
     }),
     // webpack 5 无需配置
     // new HardSourceWebpackPlugin(),
   ],
-  optimization: {
-    splitChunks: {
-      chunks: 'all',
-      // 拆分包的大小，至少minSize
-      // 如果一个包拆分出来达不到minSize，那么这个包就不会拆分
-      minSize: 2000,
-      // 将大于maxSize的包，拆分成不小于minSize的包
-      minChunks: 2,
-      // 最大的异步请求数量
-      maxAsyncRequests: 30,
-    },
-  },
 };

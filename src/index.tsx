@@ -4,6 +4,7 @@ import App from './app';
 import './index.css';
 
 const container = document.querySelector('#root');
+console.log(container);
 const root = createRoot(container!);
 
 if (module && module.hot) {
